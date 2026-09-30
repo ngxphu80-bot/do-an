@@ -1,0 +1,7 @@
+{
+  "name": "Hôm Nay Ăn Gì? - Gợi Ý Món Ăn & Dinh Dưỡng Toàn Cầu",
+  "description": "Ứng dụng gợi ý hơn 500 món ăn khắp thế giới theo bữa ăn, lượng calo, khẩu vị, nguyên liệu tủ lạnh, ngân sách và tình trạng sức khỏe đặc thù.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
