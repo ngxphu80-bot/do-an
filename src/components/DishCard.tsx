@@ -75,10 +75,13 @@ export const DishCard: React.FC<DishCardProps> = ({
       className="group bg-white rounded-3xl overflow-hidden border border-amber-100/80 shadow-xs hover:shadow-xl hover:border-amber-200 transition-all duration-300 flex flex-col justify-between"
     >
       {/* Top Media Section with Food Icon illustration */}
-      <div className="relative aspect-4/3 overflow-hidden bg-amber-50/50">
+      <div className="relative aspect-4/3 overflow-hidden bg-slate-900">
         <DishIllustration
           dish={dish}
+          displayMode={localMode}
           size="md"
+          showModeToggle={true}
+          onToggleMode={() => setLocalMode(localMode === "icon" ? "photo" : "icon")}
         />
 
         {/* Top Badges */}

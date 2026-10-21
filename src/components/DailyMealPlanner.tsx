@@ -622,9 +622,10 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
                 onClick={() => onSelectDetail(dish)}
                 className="flex flex-col sm:flex-row items-center gap-4 cursor-pointer group"
               >
-                <div className="w-full sm:w-44 h-32 rounded-2xl overflow-hidden bg-amber-50/50 shrink-0 relative border border-slate-100">
+                <div className="w-full sm:w-44 h-32 rounded-2xl overflow-hidden bg-slate-950 shrink-0 relative">
                   <DishIllustration
                     dish={dish}
+                    displayMode={displayMode}
                     size="sm"
                     roundedClassName="rounded-2xl"
                   />

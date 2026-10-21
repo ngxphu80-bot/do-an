@@ -227,11 +227,38 @@ export const MealFilterBar: React.FC<MealFilterBarProps> = ({
           </button>
         ))}
 
-        {/* Visual Mode: Pure High-Visibility Icon Mode */}
-        <div className="flex items-center gap-1.5 bg-amber-100/70 px-3 py-1.5 rounded-2xl border border-amber-200/80 shrink-0 ml-auto text-xs font-bold text-amber-950">
-          <Palette className="w-3.5 h-3.5 text-amber-600" />
-          <span>Biểu Tượng Trực Quan</span>
-        </div>
+        {/* Visual Mode Selector: Icon vs Photo */}
+        {onToggleVisualMode && (
+          <div className="flex items-center gap-1 bg-amber-100/70 p-1 rounded-2xl border border-amber-200/80 shrink-0 ml-auto">
+            <span className="text-[11px] font-bold text-amber-900 px-1.5 hidden lg:inline">Minh họa:</span>
+            <button
+              type="button"
+              onClick={() => onToggleVisualMode("icon")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                visualMode === "icon"
+                  ? "bg-amber-500 text-white shadow-xs"
+                  : "text-amber-900 hover:bg-amber-200/60"
+              }`}
+              title="Chế độ Biểu tượng Icon (Mặc định)"
+            >
+              <Palette className="w-3.5 h-3.5" />
+              <span>Biểu Tượng Icon</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleVisualMode("photo")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                visualMode === "photo"
+                  ? "bg-amber-500 text-white shadow-xs"
+                  : "text-amber-900 hover:bg-amber-200/60"
+              }`}
+              title="Chế độ Ảnh chụp thực tế"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Ảnh Chụp</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Expanded Advanced Filters Drawer */}
