@@ -112,6 +112,71 @@ Hãy trả về định dạng JSON thuần (không markdown code block nếu đ
   }
 });
 
+// AI Chef endpoint: Smart ingredient substitutes for missing recipe ingredient
+app.post("/api/ai-chef/substitutes", async (req, res) => {
+  try {
+    const { dishName, missingIngredient, availableIngredients, dishDescription } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      return res.status(200).json({
+        success: false,
+        fallback: true,
+        message: "Gemini API key chưa cấu hình, chuyển sang kho kiến thức ẩm thực tích hợp sẵn."
+      });
+    }
+
+    const prompt = `Bạn là một Bếp trưởng & Chuyên gia Ẩm thực giàu kinh nghiệm.
+Người dùng đang muốn nấu món: "${dishName || "Món ăn gia đình"}" (${dishDescription || ""}).
+Họ đang BỊ THIẾU nguyên liệu: "${missingIngredient}".
+Trong tủ lạnh của họ hiện có thể có: ${availableIngredients && availableIngredients.length > 0 ? availableIngredients.join(", ") : "Nguyên liệu gia đình phổ thông"}.
+
+Hãy gợi ý ĐÚNG 2 hoặc 3 nguyên liệu thay thế THÔNG MINH, HỢP VỊ NHẤT cho món "${dishName}".
+Ưu tiên những nguyên liệu phổ biến, dễ mua hoặc có thể có sẵn trong tủ lạnh, giữ được kết cấu và sự ngon miệng của món ăn.
+
+Trả về duy nhất JSON thuần với cấu trúc:
+{
+  "substitutes": [
+    {
+      "name": "Tên nguyên liệu thay thế (kèm dạng sơ chế nếu cần)",
+      "ratio": "Tỷ lệ thay thế (ví dụ: 1:1, hoặc 1 thìa = 1 quả)",
+      "description": "Lý do thay thế phù hợp, hương vị và kết cấu mang lại cho món này",
+      "cookingAdjustment": "Mẹo nêm nếm hoặc điều chỉnh thời gian nấu khi dùng nguyên liệu này"
+    }
+  ],
+  "chefNote": "Lời khuyên ngắn gọn của bếp trưởng khi chế biến món này với nguyên liệu thay thế"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const responseText = response.text || "{}";
+    let parsedData;
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch {
+      const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsedData = JSON.parse(cleaned);
+    }
+
+    return res.json({
+      success: true,
+      data: parsedData
+    });
+  } catch (error: any) {
+    console.error("AI Substitute API error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Lỗi khi gợi ý nguyên liệu thay thế"
+    });
+  }
+});
+
 // AI Chef endpoint: Full day meal plan consultation
 app.post("/api/ai-chef/day-plan", async (req, res) => {
   try {
@@ -207,6 +272,78 @@ Trả về JSON thuần với cấu trúc:
     return res.status(500).json({
       success: false,
       error: error?.message || "Lỗi khi tạo thực đơn cả ngày"
+    });
+  }
+});
+
+// AI Chef endpoint: Weather-based meal recommendation with culinary rationale
+app.post("/api/ai-chef/weather-recommendation", async (req, res) => {
+  try {
+    const { cityName, temperature, conditionLabel, conditionCategory, currentMealPeriod, userDemand } = req.body;
+    const ai = getGeminiClient();
+
+    if (!ai) {
+      return res.status(200).json({
+        success: false,
+        fallback: true,
+        message: "Gemini API key chưa được cấu hình, dùng hệ thống phân tích thời tiết tích hợp."
+      });
+    }
+
+    const prompt = `Bạn là Bếp trưởng & Bác sĩ Dinh dưỡng am hiểu khí hậu, thời tiết Việt Nam và ẩm thực thế giới.
+Thời tiết thực tế hôm nay:
+- Địa điểm: ${cityName || "Việt Nam"}
+- Nhiệt độ hiện tại: ${temperature}°C
+- Thời tiết: ${conditionLabel || "Bình thường"} (Nhóm: ${conditionCategory || "mild"})
+- Bữa ăn: ${currentMealPeriod || "Bữa chính"}
+- Nhu cầu đặc biệt của người dùng: ${userDemand || "Theo thời tiết"}
+
+Hãy đưa ra lời khuyên ẩm thực chuyên sâu và gợi ý 3 món ăn chuẩn vị nhất:
+- Nếu ngày mưa / lạnh (<22°C): Ưu tiên món ấm nóng, nước dùng sôi sục, gia vị giữ ấm (gừng, sả, tiêu, ớt ấm bụng), lẩu, canh hầm hoặc món kho đậm đà.
+- Nếu ngày nắng nóng (>30°C): Ưu tiên món thanh mát, canh chua, đồ uống mát lạnh, gỏi cuốn thanh nhẹ, chè dưỡng nhan bù nước khoáng.
+- Nếu ngày mát mẻ: Món ăn cân bằng dinh dưỡng, mâm cơm gia đình chuẩn vị.
+
+Trả về duy nhất JSON thuần với cấu trúc:
+{
+  "weatherInsight": "Lời khuyên ngắn gọn (2-3 câu) giải thích tại sao thời tiết này cơ thể cần nhóm món ăn này",
+  "recommendedDishes": [
+    {
+      "name": "Tên món ăn gợi ý",
+      "category": "Món Canh / Món Mặn / Đồ Uống Mát / Món Nước",
+      "whyFit": "Lý do vì sao món này cực kỳ phù hợp với thời tiết ${temperature}°C và ${conditionLabel}",
+      "nutritionBenefit": "Lợi ích sức khỏe mang lại lúc này"
+    }
+  ],
+  "drinkRecommendation": "Gợi ý 1 đồ uống mát lạnh hoặc trà ấm phù hợp thời tiết này",
+  "chefTip": "Mẹo nêm nếm hoặc thưởng thức ngon nhất"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+
+    const responseText = response.text || "{}";
+    let parsedData;
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch {
+      const cleaned = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      parsedData = JSON.parse(cleaned);
+    }
+
+    return res.json({
+      success: true,
+      data: parsedData
+    });
+  } catch (error: any) {
+    console.error("AI Weather recommendation error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Lỗi khi gợi ý theo thời tiết"
     });
   }
 });

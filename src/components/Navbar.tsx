@@ -1,35 +1,50 @@
-import React from "react";
-import { Utensils, CalendarDays, Refrigerator, Disc3, HeartPulse, Bookmark, Sparkles, Palette, Camera } from "lucide-react";
+import React, { useRef } from "react";
+import { 
+  Utensils, CalendarDays, Refrigerator, Disc3, HeartPulse, 
+  Bookmark, Sparkles, Palette, Camera, ShoppingCart, BookOpen, Upload 
+} from "lucide-react";
 import { VisualDisplayMode } from "../types";
 
-export type ActiveTabType = "explore" | "daily_plan" | "pantry" | "wheel" | "health" | "saved";
+export type ActiveTabType = "explore" | "daily_plan" | "pantry" | "wheel" | "health" | "saved" | "shopping" | "diary";
 
 interface NavbarProps {
   activeTab: ActiveTabType;
   setActiveTab: (tab: ActiveTabType) => void;
   savedCount: number;
+  shoppingCount?: number;
+  diaryCount?: number;
   openHealthModal: () => void;
   totalDishesCount: number;
   visualMode?: VisualDisplayMode;
   onToggleVisualMode?: (mode: VisualDisplayMode) => void;
+  customLogo?: string;
+  onUploadLogo?: (logoUrl: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   savedCount,
+  shoppingCount = 0,
+  diaryCount = 0,
   openHealthModal,
   totalDishesCount,
-  visualMode = "icon",
-  onToggleVisualMode
+  visualMode = "photo",
+  onToggleVisualMode,
+  customLogo,
+  onUploadLogo
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const navItems: { id: ActiveTabType; label: string; icon: React.ReactNode; badge?: string }[] = [
-    { id: "explore", label: "Khám Phá Món", icon: <Utensils className="w-4 h-4" />, badge: `${totalDishesCount}+` },
+    { id: "explore", label: "Khám Phá", icon: <Utensils className="w-4 h-4" />, badge: `${totalDishesCount}+` },
     { id: "daily_plan", label: "Thực Đơn 1 Ngày", icon: <CalendarDays className="w-4 h-4" /> },
-    { id: "pantry", label: "Tủ Lạnh Nhà Tôi", icon: <Refrigerator className="w-4 h-4" /> },
-    { id: "wheel", label: "Vòng Quay May Mắn", icon: <Disc3 className="w-4 h-4" />, badge: "Vui nhộn" },
-    { id: "health", label: "Dinh Dưỡng & TDEE", icon: <HeartPulse className="w-4 h-4" /> },
-    { id: "saved", label: "Đã Lưu & Đi Chợ", icon: <Bookmark className="w-4 h-4" />, badge: savedCount > 0 ? `${savedCount}` : undefined },
+    { id: "diary", label: "Nhật Ký", icon: <BookOpen className="w-4 h-4" />, badge: diaryCount > 0 ? `${diaryCount}` : undefined },
+    { id: "pantry", label: "Tủ Lạnh", icon: <Refrigerator className="w-4 h-4" /> },
+    { id: "wheel", label: "Vòng Quay", icon: <Disc3 className="w-4 h-4" /> },
+    { id: "saved", label: "Đã Lưu", icon: <Bookmark className="w-4 h-4" />, badge: savedCount > 0 ? `${savedCount}` : undefined },
+    { id: "shopping", label: "Đi Chợ", icon: <ShoppingCart className="w-4 h-4" />, badge: shoppingCount > 0 ? `${shoppingCount}` : undefined },
+    { id: "health", label: "Tính Calo", icon: <HeartPulse className="w-4 h-4" /> },
   ];
 
   return (
@@ -37,13 +52,49 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           
-          {/* Logo Brand */}
+          {/* Logo Brand: Gắn ảnh gốc trực tiếp, không can thiệp hay chỉnh sửa chi tiết ảnh */}
           <div 
             onClick={() => setActiveTab("explore")}
             className="flex items-center gap-3 cursor-pointer select-none group"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-linear-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform">
-              <span className="text-xl sm:text-2xl">🍲</span>
+            <div className="relative group/logo shrink-0 flex items-center justify-center">
+              <img
+                src={customLogo || "/app-logo.jpg"}
+                alt="Logo Hôm Nay Ăn Gì"
+                className="h-10 sm:h-12 w-auto max-h-12 max-w-[56px] object-contain"
+                referrerPolicy="no-referrer"
+              />
+              {onUploadLogo && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="absolute -bottom-1 -right-1 p-1 bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-600 rounded-full shadow-md border border-slate-200 opacity-0 group-hover/logo:opacity-100 transition-opacity"
+                  title="Tải ảnh logo trực tiếp lên (PNG/JPG)"
+                >
+                  <Upload className="w-3 h-3" />
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file && onUploadLogo) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (typeof reader.result === "string") {
+                        onUploadLogo(reader.result);
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5">

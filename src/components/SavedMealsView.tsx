@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Dish, DayMealPlan, VisualDisplayMode } from "../types";
 import { 
   Bookmark, ShoppingCart, History, Trash2, CheckSquare, 
-  Square, Copy, Check, ChefHat, Calendar, ArrowRight, ExternalLink 
+  Square, Copy, Check, ChefHat, Calendar, ArrowRight, ExternalLink, BookOpen 
 } from "lucide-react";
 import { DishCard } from "./DishCard";
 import { formatVND } from "../utils/nutritionCalculator";
@@ -14,6 +14,7 @@ interface SavedMealsViewProps {
   savedDayPlans: DayMealPlan[];
   onDeleteDayPlan: (id: string) => void;
   onApplyDayPlan: (plan: DayMealPlan) => void;
+  onLogPlanToDiary?: (plan: DayMealPlan) => void;
   displayMode?: VisualDisplayMode;
 }
 
@@ -24,6 +25,7 @@ export const SavedMealsView: React.FC<SavedMealsViewProps> = ({
   savedDayPlans,
   onDeleteDayPlan,
   onApplyDayPlan,
+  onLogPlanToDiary,
   displayMode = "icon"
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<"favorites" | "grocery" | "history">("favorites");
@@ -268,7 +270,18 @@ export const SavedMealsView: React.FC<SavedMealsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {onLogPlanToDiary && (
+                      <button
+                        onClick={() => onLogPlanToDiary(plan)}
+                        className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 text-xs font-bold border border-orange-200 flex items-center gap-1 transition-colors"
+                        title="Ghi thực đơn này vào Nhật Ký Ăn Uống"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Ghi Vào Nhật Ký</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={() => onApplyDayPlan(plan)}
                       className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200 flex items-center gap-1 transition-colors"

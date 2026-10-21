@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Dish, DayMealPlan, UserHealthProfile, VisualDisplayMode, MealType } from "../types";
 import { 
   Calendar, RotateCcw, Shuffle, Sparkles, Flame, DollarSign, 
   CheckCircle, Plus, Bookmark, Apple, ArrowRight, ShieldCheck, 
-  Heart, Search, X, Check, Scale, Activity, Info
+  Heart, Search, X, Check, Scale, Activity, Info, ShoppingCart, BookOpen, Clock 
 } from "lucide-react";
 import { formatVND, evaluateMealBalance, calculateBMR, calculateTDEE } from "../utils/nutritionCalculator";
+import { generateSmartHarmoniousPlan, MEAL_PLAN_THEMES, MealPlanTheme } from "../utils/mealPlanGenerator";
+import { getCurrentTimeOfDayInfo, TimeOfDayInfo } from "../utils/timeOfDayHelper";
 import { DishCard } from "./DishCard";
 import { DishIllustration } from "./DishIllustration";
 
@@ -18,6 +20,10 @@ interface DailyMealPlannerProps {
   onSaveDayPlan: (plan: DayMealPlan) => void;
   isSavedPlan: boolean;
   displayMode?: VisualDisplayMode;
+  onAddPlanToShoppingList?: (plan: DayMealPlan) => void;
+  onNavigateToShopping?: () => void;
+  onLogPlanToDiary?: (plan: DayMealPlan, targetDate?: string) => void;
+  onNavigateToDiary?: () => void;
 }
 
 type SlotKey = "breakfast" | "lunch" | "afternoon" | "dinner" | "dessert";
@@ -30,10 +36,36 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
   userProfile,
   onSaveDayPlan,
   isSavedPlan,
-  displayMode = "icon"
+  displayMode = "icon",
+  onAddPlanToShoppingList,
+  onNavigateToShopping,
+  onLogPlanToDiary,
+  onNavigateToDiary
 }) => {
   const [slotPickerModal, setSlotPickerModal] = useState<SlotKey | null>(null);
   const [pickerSearchQuery, setPickerSearchQuery] = useState<string>("");
+
+  // Live time of day tracking for meal recommendations
+  const [currentTimeInfo, setCurrentTimeInfo] = useState<TimeOfDayInfo>(() => getCurrentTimeOfDayInfo());
+  const [currentTimeStr, setCurrentTimeStr] = useState<string>(() => {
+    return new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimeInfo(getCurrentTimeOfDayInfo());
+      setCurrentTimeStr(new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }));
+    }, 20000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentActiveSlotKey: SlotKey = useMemo(() => {
+    if (currentTimeInfo.period === "breakfast") return "breakfast";
+    if (currentTimeInfo.period === "lunch") return "lunch";
+    if (currentTimeInfo.period === "afternoon") return "afternoon";
+    if (currentTimeInfo.period === "dinner") return "dinner";
+    return "dessert";
+  }, [currentTimeInfo.period]);
 
   // Precise Daily Target Kcal Calculation based on Mifflin-St Jeor formula
   const { bmr, tdee, targetDailyKcal, goalLabel } = useMemo(() => {
@@ -165,31 +197,13 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
     setPickerSearchQuery("");
   };
 
-  // Generate completely fresh full day plan with strict slot classifications
-  const generateNewFullDay = () => {
-    const breakfasts = getSlotPool("breakfast");
-    const mains = getSlotPool("lunch");
-    const snacks = getSlotPool("afternoon");
-    const desserts = getSlotPool("dessert");
+  const [selectedTheme, setSelectedTheme] = useState<MealPlanTheme>("balanced");
 
-    const b = breakfasts[Math.floor(Math.random() * breakfasts.length)] || allDishes[0];
-    const l = mains[Math.floor(Math.random() * mains.length)] || allDishes[1];
-    
-    // Dinner should preferably be a different dish from lunch
-    let dPool = mains.filter(m => m.id !== l.id);
-    if (dPool.length === 0) dPool = mains;
-    const d = dPool[Math.floor(Math.random() * dPool.length)] || allDishes[2];
-
-    const aft = snacks[Math.floor(Math.random() * snacks.length)] || allDishes[3];
-    const des = desserts[Math.floor(Math.random() * desserts.length)] || allDishes[4];
-
-    updatePlanDishes({
-      breakfast: b,
-      lunch: l,
-      afternoonSnack: aft,
-      dinner: d,
-      dessert: des
-    });
+  // Generate completely fresh full day plan with smart diversity, protein rotation & harmony
+  const generateNewFullDay = (themeOverride?: MealPlanTheme) => {
+    const theme = themeOverride || selectedTheme;
+    const newPlan = generateSmartHarmoniousPlan(allDishes, targetDailyKcal, theme);
+    onUpdatePlan(newPlan);
   };
 
   const mealSlots: {
@@ -223,6 +237,46 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
   return (
     <div className="space-y-8 animate-fade-in">
       
+      {/* Live Time of Day Meal Banner - Đưa ra món ăn đúng thời điểm và thời gian ăn */}
+      <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-50 rounded-3xl p-4 sm:p-5 border border-amber-300 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-sm shrink-0">
+            <Clock className="w-5 h-5 animate-pulse" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black text-amber-950 uppercase tracking-wide">
+                Đúng Thời Điểm & Thời Gian Ăn:
+              </span>
+              <span className="text-xs font-black bg-amber-500 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                {currentTimeStr} • {currentTimeInfo.icon} {currentTimeInfo.title}
+              </span>
+              <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
+                Khung giờ: {currentTimeInfo.timeRangeStr}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-700 mt-1">
+              {currentTimeInfo.advice}
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            const el = document.getElementById(`meal-slot-${currentActiveSlotKey}`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "center" });
+              el.classList.add("ring-4", "ring-amber-400");
+              setTimeout(() => el.classList.remove("ring-4", "ring-amber-400"), 2000);
+            }
+          }}
+          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold rounded-xl shadow-xs transition-transform active:scale-95 flex items-center gap-1.5 shrink-0"
+        >
+          <span>Xem Món Đúng Khung Giờ Này</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="max-w-xl text-center md:text-left">
@@ -238,28 +292,141 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => onSaveDayPlan(currentPlan)}
-            className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition-all ${
-              isSavedPlan
-                ? "bg-emerald-600 text-white shadow-emerald-600/30"
-                : "bg-white text-slate-800 hover:bg-amber-50"
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${isSavedPlan ? "fill-current" : ""}`} />
-            <span>{isSavedPlan ? "Đã Lưu Thực Đơn Này" : "Lưu Thực Đơn Cả Ngày"}</span>
-          </button>
+        <div className="flex flex-col gap-3 w-full lg:w-auto">
+          {/* Theme Selector Pills for Diverse Random Meals */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[11px] font-bold text-amber-950 uppercase shrink-0">
+              Phong cách:
+            </span>
+            {MEAL_PLAN_THEMES.map((t) => {
+              const isSelected = selectedTheme === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setSelectedTheme(t.id);
+                    generateNewFullDay(t.id);
+                  }}
+                  className={`px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 shadow-2xs ${
+                    isSelected
+                      ? "bg-amber-950 text-white shadow-sm ring-2 ring-amber-300"
+                      : "bg-white/90 text-amber-950 hover:bg-white"
+                  }`}
+                  title={t.desc}
+                >
+                  <span>{t.icon}</span>
+                  <span>{t.name}</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <button
-            onClick={generateNewFullDay}
-            className="px-5 py-2.5 rounded-2xl bg-slate-950 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2"
-          >
-            <Shuffle className="w-4 h-4 text-amber-400" />
-            <span>Đổi Thực Đơn Mới 100%</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {onLogPlanToDiary && (
+              <button
+                onClick={() => {
+                  onLogPlanToDiary(currentPlan);
+                  if (onNavigateToDiary) onNavigateToDiary();
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95"
+                title="Ghi nhận thực đơn này vào Nhật Ký Ăn Uống hôm nay"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Ghi Vào Nhật Ký</span>
+              </button>
+            )}
+
+            {onAddPlanToShoppingList && (
+              <button
+                onClick={() => {
+                  onAddPlanToShoppingList(currentPlan);
+                  if (onNavigateToShopping) onNavigateToShopping();
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs sm:text-sm font-bold shadow-md transition-all flex items-center gap-2 active:scale-95"
+                title="Tự động gom toàn bộ nguyên liệu của thực đơn 5 cữ hôm nay vào Danh Sách Đi Chợ"
+              >
+                <ShoppingCart className="w-4 h-4 text-amber-900" />
+                <span>Gom Vào Đi Chợ</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onSaveDayPlan(currentPlan)}
+              className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition-all ${
+                isSavedPlan
+                  ? "bg-emerald-600 text-white shadow-emerald-600/30"
+                  : "bg-white text-slate-800 hover:bg-amber-50"
+              }`}
+            >
+              <Bookmark className={`w-4 h-4 ${isSavedPlan ? "fill-current" : ""}`} />
+              <span>{isSavedPlan ? "Đã Lưu Thực Đơn" : "Lưu Thực Đơn"}</span>
+            </button>
+
+            <button
+              onClick={() => generateNewFullDay()}
+              className="px-5 py-2.5 rounded-2xl bg-slate-950 hover:bg-black text-white text-xs sm:text-sm font-bold shadow-lg transition-transform active:scale-95 flex items-center gap-2"
+              title="Đổi thực đơn ngẫu nhiên đa dạng, không trùng đạm, cân đối calo & nhóm chất"
+            >
+              <Shuffle className="w-4 h-4 text-amber-400" />
+              <span>Đổi Thực Đơn Đa Dạng Hài Hòa</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Diversity Quality Indicators */}
+      <div className="bg-white/80 p-3 rounded-2xl border border-amber-200 flex items-center gap-3 flex-wrap text-xs font-semibold text-slate-700">
+        <span className="font-bold text-amber-900 flex items-center gap-1 text-[11px] uppercase">
+          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <span>Tiêu Chuẩn Lựa Chọn Hợp Lý:</span>
+        </span>
+        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px]">
+          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Luân chuyển nguồn đạm (Bò / Gà / Heo / Cá / Hải sản)</span>
+        </span>
+        <span className="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px]">
+          <CheckCircle className="w-3.5 h-3.5 text-blue-600" />
+          <span>Phối hợp hài hòa món mặn & món canh/rau</span>
+        </span>
+        <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full flex items-center gap-1 text-[11px]">
+          <CheckCircle className="w-3.5 h-3.5 text-amber-600" />
+          <span>Calo kiểm soát sát mục tiêu BMR/TDEE</span>
+        </span>
+      </div>
+
+      {/* Structured Rationales: Vì sao thực đơn này là lựa chọn hợp lý & đa dạng */}
+      {currentPlan.rationales && currentPlan.rationales.length > 0 && (
+        <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white rounded-3xl border border-amber-200/90 p-4 sm:p-6 shadow-xs space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-amber-500 text-white rounded-xl shadow-2xs">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                Vì Sao Thực Đơn Này Là Lựa Chọn Hợp Lý & Đa Dạng?
+              </h3>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Tiêu chuẩn dinh dưỡng khoa học</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+            {currentPlan.rationales.map((rat, rIdx) => (
+              <div 
+                key={rIdx} 
+                className="flex items-start gap-2.5 bg-white p-3 rounded-2xl border border-amber-100 shadow-2xs text-xs text-slate-700"
+              >
+                <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                  {rIdx + 1}
+                </span>
+                <span className="leading-relaxed font-medium">{rat}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SCIENTIFIC DAILY KCAL & NUTRITION DASHBOARD */}
       <div className="bg-white rounded-3xl border border-amber-200/90 shadow-sm p-5 sm:p-7 space-y-6">
@@ -388,24 +555,39 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
         {mealSlots.map((slot) => {
           if (!slot.dish) return null;
           const dish = slot.dish;
+          const isCurrentTimeSlot = slot.key === currentActiveSlotKey;
+          const pool = getSlotPool(slot.key);
+          const alternatives = pool.filter(d => d.id !== dish.id).slice(0, 3);
 
           return (
             <div
               key={slot.key}
               id={`meal-slot-${slot.key}`}
-              className="bg-white rounded-3xl border border-slate-200/90 p-4 sm:p-6 shadow-2xs hover:border-amber-300 transition-all space-y-3"
+              className={`rounded-3xl p-4 sm:p-6 transition-all space-y-3.5 ${
+                isCurrentTimeSlot
+                  ? "bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white border-2 border-amber-400 shadow-md ring-4 ring-amber-400/25"
+                  : "bg-white border border-slate-200/90 shadow-2xs hover:border-amber-300"
+              }`}
             >
               {/* Slot Header */}
               <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{slot.icon}</span>
                   <div>
-                    <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                      <span>{slot.name}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                        {slot.name}
+                      </h3>
                       <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                         {slot.percentTarget}
                       </span>
-                    </h3>
+                      {isCurrentTimeSlot && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-[10px] flex items-center gap-1 shadow-2xs animate-pulse">
+                          <Clock className="w-3 h-3" />
+                          <span>ĐÚNG KHUNG GIỜ ĂN BÂY GIỜ ({currentTimeStr})</span>
+                        </span>
+                      )}
+                    </div>
                     <span className="text-xs text-slate-500">
                       Khung giờ: <strong>{slot.timing}</strong> • Nhu cầu đề xuất: <strong>{slot.calTarget}</strong>
                     </span>
@@ -440,10 +622,9 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
                 onClick={() => onSelectDetail(dish)}
                 className="flex flex-col sm:flex-row items-center gap-4 cursor-pointer group"
               >
-                <div className="w-full sm:w-44 h-32 rounded-2xl overflow-hidden bg-slate-950 shrink-0 relative">
+                <div className="w-full sm:w-44 h-32 rounded-2xl overflow-hidden bg-amber-50/50 shrink-0 relative border border-slate-100">
                   <DishIllustration
                     dish={dish}
-                    displayMode={displayMode}
                     size="sm"
                     roundedClassName="rounded-2xl"
                   />
@@ -486,6 +667,30 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
+              </div>
+
+              {/* 2-3 Lựa chọn hợp lý thay thế nhanh cùng cữ */}
+              <div className="pt-3 border-t border-slate-100/90 flex items-center gap-2 flex-wrap text-xs">
+                <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Gợi ý lựa chọn hợp lý khác:</span>
+                </span>
+                {alternatives.map((alt) => (
+                  <button
+                    key={alt.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectSlotDish(slot.key, alt);
+                    }}
+                    className="px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-amber-100 hover:text-amber-950 border border-slate-200 text-[11px] font-bold text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title={`Đổi sang ${alt.name} (${alt.calories} kcal - ${formatVND(alt.estimatedCostVND)})`}
+                  >
+                    <span>{alt.flagEmoji}</span>
+                    <span>{alt.name}</span>
+                    <span className="text-amber-600 font-semibold">({alt.calories} kcal)</span>
+                  </button>
+                ))}
               </div>
 
             </div>

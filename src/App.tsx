@@ -1,9 +1,12 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { 
-  Dish, FilterState, DayMealPlan, UserHealthProfile, PortionType, VisualDisplayMode 
+  Dish, FilterState, DayMealPlan, UserHealthProfile, PortionType, VisualDisplayMode,
+  ShoppingListItem, ShoppingItemCategory, MealDiaryDay
 } from "./types";
 import { WORLD_500_DISHES } from "./data/worldDishesCatalog";
-import { Navbar, ActiveTabType } from "./components/Navbar";
+import { Sidebar, ActiveTabType } from "./components/Sidebar";
+import { TimeOfDayMealRecommender } from "./components/TimeOfDayMealRecommender";
+import { WeatherDemandMealRecommender } from "./components/WeatherDemandMealRecommender";
 import { DishCard } from "./components/DishCard";
 import { DishDetailModal } from "./components/DishDetailModal";
 import { MealFilterBar } from "./components/MealFilterBar";
@@ -13,6 +16,12 @@ import { WheelOfFortune } from "./components/WheelOfFortune";
 import { HealthProfileModal } from "./components/HealthProfileModal";
 import { SavedMealsView } from "./components/SavedMealsView";
 import { DailyNutritionTip } from "./components/DailyNutritionTip";
+import { ShoppingList } from "./components/ShoppingList";
+import { FoodDiary } from "./components/FoodDiary";
+import { 
+  extractDayPlanIngredients, extractDishIngredients, mergeShoppingItems, inferIngredientCategory 
+} from "./utils/shoppingListHelper";
+import { generateInitialMealDiary, createDiaryFromMealPlan } from "./utils/mealDiaryHelper";
 import { 
   Sparkles, ChefHat, HeartPulse, Flame, Compass, 
   ArrowUp, ShieldCheck, CheckCircle2 
@@ -54,13 +63,13 @@ export function App() {
   const [isHealthModalOpen, setIsHealthModalOpen] = useState<boolean>(false);
   const [visibleDishesCount, setVisibleDishesCount] = useState<number>(24);
 
-  // Visual display mode: "icon" (default per user preference) or "photo"
+  // Visual display mode: "photo" (ảnh thực tế) or "icon"
   const [visualMode, setVisualMode] = useState<VisualDisplayMode>(() => {
     try {
       const saved = localStorage.getItem("hon_nay_an_gi_visual_mode");
-      return (saved === "photo" ? "photo" : "icon") as VisualDisplayMode;
+      return (saved === "icon" ? "icon" : "photo") as VisualDisplayMode;
     } catch {
-      return "icon";
+      return "photo";
     }
   });
 
@@ -147,6 +156,136 @@ export function App() {
     } catch {}
   }, [savedDayPlans]);
 
+  // Persistence: Custom logo (exact user image file, unedited)
+  const [customLogo, setCustomLogo] = useState<string>(() => {
+    try {
+      return localStorage.getItem("hon_nay_an_gi_custom_app_logo") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const handleUploadLogo = (logoUrl: string) => {
+    setCustomLogo(logoUrl);
+    try {
+      localStorage.setItem("hon_nay_an_gi_custom_app_logo", logoUrl);
+    } catch {}
+  };
+
+  // Persistence: Food Diary (Nhật Ký Ăn Uống)
+  const [mealDiary, setMealDiary] = useState<MealDiaryDay[]>(() => {
+    try {
+      const saved = localStorage.getItem("hon_nay_an_gi_meal_diary");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return generateInitialMealDiary(currentDayPlan, userProfile?.targetDailyCalories || 2000);
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("hon_nay_an_gi_meal_diary", JSON.stringify(mealDiary));
+    } catch {}
+  }, [mealDiary]);
+
+  const handleLogPlanToDiary = (plan: DayMealPlan, targetDateStr?: string) => {
+    const target = targetDateStr || new Date().toISOString().split("T")[0];
+    const newEntry = createDiaryFromMealPlan(
+      plan,
+      target,
+      userProfile?.targetDailyCalories || 2000,
+      false
+    );
+
+    setMealDiary(prev => {
+      const filtered = prev.filter(d => d.date !== target);
+      return [newEntry, ...filtered].sort((a, b) => b.date.localeCompare(a.date));
+    });
+  };
+
+  // Persistence: Shopping List items
+  const [shoppingItems, setShoppingItems] = useState<ShoppingListItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("hon_nay_an_gi_shopping_list");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("hon_nay_an_gi_shopping_list", JSON.stringify(shoppingItems));
+    } catch {}
+  }, [shoppingItems]);
+
+  // Shopping list handlers
+  const handleToggleShoppingItem = (id: string) => {
+    setShoppingItems(prev => prev.map(item => item.id === id ? { ...item, checked: !item.checked } : item));
+  };
+
+  const handleDeleteShoppingItem = (id: string) => {
+    setShoppingItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleClearCompletedShopping = () => {
+    setShoppingItems(prev => prev.filter(item => !item.checked));
+  };
+
+  const handleClearAllShopping = () => {
+    setShoppingItems([]);
+  };
+
+  const handleAddCustomShoppingItem = (
+    name: string,
+    amount: string,
+    category: ShoppingItemCategory,
+    sourceName?: string
+  ) => {
+    const newItem: ShoppingListItem = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name,
+      amount: amount || "Vừa đủ",
+      category,
+      sourceType: "custom",
+      sourceName: sourceName || "Tự thêm",
+      checked: false,
+      addedAt: new Date().toISOString()
+    };
+    setShoppingItems(prev => mergeShoppingItems(prev, [newItem]));
+  };
+
+  const handleImportFromDayPlan = (plan: DayMealPlan = currentDayPlan) => {
+    const extracted = extractDayPlanIngredients(plan);
+    setShoppingItems(prev => mergeShoppingItems(prev, extracted));
+  };
+
+  const handleImportMissingFromPantry = (
+    missing?: { name: string; amount: string; category?: string; sourceName?: string }[]
+  ) => {
+    if (missing && missing.length > 0) {
+      const newItems: ShoppingListItem[] = missing.map(m => ({
+        id: `pantry-item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: m.name,
+        amount: m.amount || "Vừa đủ",
+        category: (m.category as ShoppingItemCategory) || inferIngredientCategory(m.name),
+        sourceType: "pantry_missing",
+        sourceName: m.sourceName || "Tủ lạnh - Món gợi ý",
+        checked: false,
+        addedAt: new Date().toISOString()
+      }));
+      setShoppingItems(prev => mergeShoppingItems(prev, newItems));
+    } else {
+      // Default: extract from current day plan
+      const extracted = extractDayPlanIngredients(currentDayPlan);
+      setShoppingItems(prev => mergeShoppingItems(prev, extracted));
+    }
+  };
+
+  const handleAddDishToShoppingList = (dish: Dish, portion: PortionType = "single") => {
+    const mult = calculatePortionMultiplier(portion);
+    const extracted = extractDishIngredients(dish, mult);
+    setShoppingItems(prev => mergeShoppingItems(prev, extracted));
+  };
+
   // Toggle favorite dish
   const handleToggleSave = (dish: Dish) => {
     const exists = savedDishes.some(d => d.id === dish.id);
@@ -202,12 +341,16 @@ export function App() {
   // Update profile and synchronize filter
   const handleSaveProfile = (newProfile: UserHealthProfile) => {
     setUserProfile(newProfile);
-    // Apply user allergies and condition to filter
+    // Apply user allergies and all selected health conditions to filter
+    const activeConditions = newProfile.selectedHealthConditions && newProfile.selectedHealthConditions.length > 0
+      ? newProfile.selectedHealthConditions
+      : (newProfile.condition ? [newProfile.condition] : []);
+
     setFilter(prev => ({
       ...prev,
       excludedAllergens: Array.from(new Set([...prev.excludedAllergens, ...newProfile.allergies])),
-      selectedHealthProfiles: (newProfile.condition && (newProfile.condition as any) !== "normal")
-        ? Array.from(new Set([...prev.selectedHealthProfiles, newProfile.condition])) 
+      selectedHealthProfiles: activeConditions.length > 0 
+        ? Array.from(new Set([...prev.selectedHealthProfiles, ...activeConditions]))
         : prev.selectedHealthProfiles
     }));
   };
@@ -280,33 +423,53 @@ export function App() {
   const portionMultiplier = calculatePortionMultiplier(filter.selectedPortion);
 
   return (
-    <div className="min-h-screen bg-amber-50/40 text-slate-800 font-sans flex flex-col selection:bg-amber-200">
+    <div className="min-h-screen bg-amber-50/40 text-slate-800 font-sans selection:bg-amber-200">
       
-      {/* Top Navigation */}
-      <Navbar
+      {/* Vertical Left Sidebar Navigation (Thanh menu dọc lề bên trái) */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         savedCount={savedDishes.length}
+        shoppingCount={shoppingItems.filter(i => !i.checked).length}
+        diaryCount={mealDiary.length}
         openHealthModal={() => setIsHealthModalOpen(true)}
         totalDishesCount={WORLD_500_DISHES.length}
         visualMode={visualMode}
         onToggleVisualMode={handleToggleVisualMode}
+        customLogo={customLogo}
+        onUploadLogo={handleUploadLogo}
+        userProfile={userProfile}
       />
 
-      {/* Main Content Area */}
-      <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Main Content Container with left margin on desktop to accommodate vertical sidebar */}
+      <div className="md:ml-64 lg:ml-72 flex flex-col min-h-screen pb-16 md:pb-0">
+        
+        {/* Main Content Area */}
+        <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-        {/* Tab 1: Explore & Filter 500 Dishes */}
-        {activeTab === "explore" && (
-          <div className="space-y-6">
-            
-            {/* Daily Nutrition Tip based on user's current goal */}
-            <DailyNutritionTip
-              userProfile={userProfile}
-              onOpenHealthModal={() => setIsHealthModalOpen(true)}
-              onSelectDish={(dish) => setSelectedDishForDetail(dish)}
-              onApplyConditionFilter={(condition) => {
-                setFilter((prev) => ({
+          {/* Tab 1: Explore & Filter 500 Dishes */}
+          {activeTab === "explore" && (
+            <div className="space-y-6">
+              
+              {/* Đưa ra món ăn đúng thời điểm và thời gian ăn */}
+              <TimeOfDayMealRecommender
+                allDishes={WORLD_500_DISHES}
+                onSelectDish={(dish) => setSelectedDishForDetail(dish)}
+                onFilterMealType={(meal) => {
+                  setFilter((prev) => ({ ...prev, selectedMeal: meal }));
+                  const el = document.getElementById("dishes-catalog-section");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                displayMode={visualMode}
+              />
+
+              {/* Daily Nutrition Tip based on user's current goal */}
+              <DailyNutritionTip
+                userProfile={userProfile}
+                onOpenHealthModal={() => setIsHealthModalOpen(true)}
+                onSelectDish={(dish) => setSelectedDishForDetail(dish)}
+                onApplyConditionFilter={(condition) => {
+                  setFilter((prev) => ({
                   ...prev,
                   selectedHealthProfiles: prev.selectedHealthProfiles.includes(condition)
                     ? prev.selectedHealthProfiles
@@ -349,14 +512,20 @@ export function App() {
 
               <div className="relative z-10 flex flex-col gap-2 shrink-0">
                 <button
+                  onClick={() => setActiveTab("weather")}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs sm:text-sm shadow-lg hover:from-amber-600 hover:to-orange-600 transition-transform active:scale-95 flex items-center gap-2"
+                >
+                  <span>🌤️ Gợi Ý Món Theo Thời Tiết & Nhu Cầu</span>
+                </button>
+                <button
                   onClick={() => setActiveTab("wheel")}
-                  className="px-5 py-3 rounded-2xl bg-slate-950 text-white font-bold text-xs sm:text-sm shadow-lg hover:bg-black transition-transform active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-slate-950 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-black transition-transform active:scale-95 flex items-center gap-2"
                 >
                   <span>🎡 Vòng Quay &quot;Hôm Nay Ăn Gì&quot;</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("pantry")}
-                  className="px-5 py-3 rounded-2xl bg-white text-amber-800 font-bold text-xs sm:text-sm shadow-md hover:bg-amber-50 transition-transform active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-white text-amber-800 font-bold text-xs sm:text-sm shadow-xs hover:bg-amber-50 transition-transform active:scale-95 flex items-center gap-2 border border-amber-200"
                 >
                   <span>🧊 Nấu Theo Tủ Lạnh Sẵn Có</span>
                 </button>
@@ -369,14 +538,16 @@ export function App() {
             </div>
 
             {/* Comprehensive Filter Bar */}
-            <MealFilterBar
-              filter={filter}
-              onFilterChange={setFilter}
-              onResetFilter={() => setFilter(INITIAL_FILTER)}
-              totalFilteredCount={filteredDishes.length}
-              visualMode={visualMode}
-              onToggleVisualMode={handleToggleVisualMode}
-            />
+            <div id="dishes-catalog-section" className="scroll-mt-4">
+              <MealFilterBar
+                filter={filter}
+                onFilterChange={setFilter}
+                onResetFilter={() => setFilter(INITIAL_FILTER)}
+                totalFilteredCount={filteredDishes.length}
+                visualMode={visualMode}
+                onToggleVisualMode={handleToggleVisualMode}
+              />
+            </div>
 
             {/* Grid of Dishes */}
             {filteredDishes.length === 0 ? (
@@ -407,7 +578,7 @@ export function App() {
                       onSelectDetail={(d) => setSelectedDishForDetail(d)}
                       portionMultiplier={portionMultiplier}
                       selectedPortion={filter.selectedPortion}
-                      displayMode={visualMode}
+                      displayMode="icon"
                     />
                   ))}
                 </div>
@@ -431,6 +602,16 @@ export function App() {
           </div>
         )}
 
+        {/* Tab: AI Weather & Demand Meal Recommender */}
+        {activeTab === "weather" && (
+          <WeatherDemandMealRecommender
+            allDishes={WORLD_500_DISHES}
+            onSelectDish={(d) => setSelectedDishForDetail(d)}
+            onSaveDish={handleToggleSave}
+            savedDishIds={savedDishes.map(d => d.id)}
+          />
+        )}
+
         {/* Tab 2: Daily Meal Planner */}
         {activeTab === "daily_plan" && (
           <DailyMealPlanner
@@ -442,6 +623,10 @@ export function App() {
             onSaveDayPlan={handleSaveDayPlan}
             isSavedPlan={savedDayPlans.some(p => p.id === currentDayPlan.id)}
             displayMode={visualMode}
+            onAddPlanToShoppingList={(plan) => handleImportFromDayPlan(plan)}
+            onNavigateToShopping={() => setActiveTab("shopping")}
+            onLogPlanToDiary={handleLogPlanToDiary}
+            onNavigateToDiary={() => setActiveTab("diary")}
           />
         )}
 
@@ -453,6 +638,8 @@ export function App() {
             isSaved={isDishSaved}
             onToggleSave={handleToggleSave}
             displayMode={visualMode}
+            onAddMissingToShoppingList={(missingItems) => handleImportMissingFromPantry(missingItems)}
+            onNavigateToShopping={() => setActiveTab("shopping")}
           />
         )}
 
@@ -476,7 +663,42 @@ export function App() {
             savedDayPlans={savedDayPlans}
             onDeleteDayPlan={handleDeleteDayPlan}
             onApplyDayPlan={handleApplyDayPlan}
+            onLogPlanToDiary={(plan) => {
+              handleLogPlanToDiary(plan);
+              setActiveTab("diary");
+            }}
             displayMode={visualMode}
+          />
+        )}
+
+        {/* Tab 6: Shopping List & Checklist */}
+        {activeTab === "shopping" && (
+          <ShoppingList
+            items={shoppingItems}
+            onToggleItem={handleToggleShoppingItem}
+            onDeleteItem={handleDeleteShoppingItem}
+            onClearCompleted={handleClearCompletedShopping}
+            onClearAll={handleClearAllShopping}
+            onAddItem={handleAddCustomShoppingItem}
+            onImportFromDayPlan={() => handleImportFromDayPlan(currentDayPlan)}
+            onImportFromPantry={() => handleImportMissingFromPantry()}
+            currentDayPlan={currentDayPlan}
+          />
+        )}
+
+        {/* Tab 7: Food Diary & Meal History (Nhật Ký Ăn Uống) */}
+        {activeTab === "diary" && (
+          <FoodDiary
+            diaryDays={mealDiary}
+            onUpdateDiaryDays={setMealDiary}
+            savedPlans={savedDayPlans}
+            currentDayPlan={currentDayPlan}
+            allDishes={WORLD_500_DISHES}
+            onSelectDetail={(d) => setSelectedDishForDetail(d)}
+            onAddPlanToShoppingList={(plan) => handleImportFromDayPlan(plan)}
+            userProfile={userProfile}
+            displayMode={visualMode}
+            onNavigateToPlanner={() => setActiveTab("daily_plan")}
           />
         )}
 
@@ -486,7 +708,13 @@ export function App() {
       <footer className="bg-white border-t border-amber-100 py-8 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 space-y-2">
           <div className="flex items-center justify-center gap-2 font-bold text-slate-700">
-            <span>🍲 Hôm Nay Ăn Gì?</span>
+            <img 
+              src={customLogo || "/app-logo.jpg"} 
+              alt="Logo" 
+              className="h-5 w-auto max-h-5 object-contain inline-block select-none" 
+              referrerPolicy="no-referrer"
+            />
+            <span>Hôm Nay Ăn Gì?</span>
             <span>•</span>
             <span>Kho Tàng 500+ Món Ăn Thế Giới & Chuyên Gia Dinh Dưỡng</span>
           </div>
@@ -495,6 +723,7 @@ export function App() {
           </p>
         </div>
       </footer>
+      </div>
 
       {/* Dish Detail Recipe Modal */}
       <DishDetailModal
@@ -505,6 +734,7 @@ export function App() {
         onToggleSave={handleToggleSave}
         onAddToMealPlan={handleAddToMealPlan}
         displayMode={visualMode}
+        onAddDishToShoppingList={handleAddDishToShoppingList}
       />
 
       {/* Health Profile & BMR/TDEE Calculator Modal */}

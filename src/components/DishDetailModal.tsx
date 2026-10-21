@@ -3,7 +3,7 @@ import { Dish, PortionType, VisualDisplayMode } from "../types";
 import { 
   X, Clock, Flame, Users, ChefHat, Sparkles, AlertTriangle, 
   Heart, CheckCircle2, BookmarkCheck, Scale, Apple, Share2, Palette, Camera,
-  Search, Copy, Check, ExternalLink, ImagePlus, Timer, Info, UtensilsCrossed
+  Search, Copy, Check, ExternalLink, ImagePlus, Timer, Info, UtensilsCrossed, ShoppingCart
 } from "lucide-react";
 import { formatVND, calculatePortionMultiplier } from "../utils/nutritionCalculator";
 import { DishIllustration } from "./DishIllustration";
@@ -17,6 +17,7 @@ interface DishDetailModalProps {
   onToggleSave: (dish: Dish) => void;
   onAddToMealPlan?: (dish: Dish, mealSlot: "breakfast" | "lunch" | "afternoon" | "dinner" | "dessert") => void;
   displayMode?: VisualDisplayMode;
+  onAddDishToShoppingList?: (dish: Dish, portion: PortionType) => void;
 }
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({
@@ -26,7 +27,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   isSaved,
   onToggleSave,
   onAddToMealPlan,
-  displayMode = "icon"
+  displayMode = "icon",
+  onAddDishToShoppingList
 }) => {
   const [portion, setPortion] = useState<PortionType>("single");
   const [activeStepTab, setActiveStepTab] = useState<number>(0);
@@ -36,6 +38,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const [isAttachingImage, setIsAttachingImage] = useState<boolean>(false);
   const [copiedDishName, setCopiedDishName] = useState<boolean>(false);
   const [imageSaveSuccess, setImageSaveSuccess] = useState<string | null>(null);
+  const [addedToShoppingFeedback, setAddedToShoppingFeedback] = useState<boolean>(false);
 
   useEffect(() => {
     setLocalMode(displayMode);
@@ -125,42 +128,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         <div className="overflow-y-auto grow p-0">
           
           {/* Hero Media Section with Food Icon illustration */}
-          <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-slate-950">
+          <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-amber-50/40">
             <DishIllustration
               dish={dish}
-              displayMode={localMode}
               size="hero"
-              showModeToggle={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
-            
-            {/* Quick Toggle Mode Switcher (Icon vs Photo) */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md p-1 rounded-2xl border border-white/20">
-              <button
-                type="button"
-                onClick={() => setLocalMode("icon")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  localMode === "icon"
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                <Palette className="w-3.5 h-3.5" />
-                <span>Biểu Tượng Icon</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocalMode("photo")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  localMode === "photo"
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Ảnh Chụp</span>
-              </button>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none" />
 
             {/* Overlay Info */}
             <div className="absolute bottom-6 left-6 right-6 text-white pointer-events-none">
@@ -405,12 +378,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
             {/* Detailed Ingredients Checklist */}
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                 <h3 className="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                   <Scale className="w-5 h-5 text-amber-600" />
                   <span>Nguyên Liệu Cần Chuẩn Bị (Khẩu phần: {multiplier} người)</span>
                 </h3>
-                <span className="text-xs text-slate-500">Tick chọn những thứ đã có</span>
+                <div className="flex items-center gap-2">
+                  {onAddDishToShoppingList && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onAddDishToShoppingList(dish, portion);
+                        setAddedToShoppingFeedback(true);
+                        setTimeout(() => setAddedToShoppingFeedback(false), 2200);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                      title="Thêm toàn bộ nguyên liệu món này vào Danh Sách Đi Chợ"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5 text-amber-700" />
+                      <span>{addedToShoppingFeedback ? "✓ Đã Gom Vào Đi Chợ!" : "+ Gom Vào Đi Chợ"}</span>
+                    </button>
+                  )}
+                  <span className="text-xs text-slate-500 hidden sm:inline">Tick chọn những thứ đã có</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

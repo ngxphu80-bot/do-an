@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { UserHealthProfile, HealthProfileType, AllergenType } from "../types";
 import { 
   X, HeartPulse, Scale, Activity, Flame, ShieldAlert, 
-  CheckCircle2, Sparkles, User, Info 
+  CheckCircle2, Sparkles, User, Info, Check 
 } from "lucide-react";
 import { calculateBMR, calculateTDEE } from "../utils/nutritionCalculator";
 
@@ -19,7 +19,12 @@ export const HealthProfileModal: React.FC<HealthProfileModalProps> = ({
   currentProfile,
   onSaveProfile
 }) => {
-  const [profile, setProfile] = useState<UserHealthProfile>(currentProfile);
+  const [profile, setProfile] = useState<UserHealthProfile>(() => ({
+    ...currentProfile,
+    selectedHealthConditions: currentProfile.selectedHealthConditions?.length > 0 
+      ? currentProfile.selectedHealthConditions 
+      : currentProfile.condition ? [currentProfile.condition] : []
+  }));
 
   if (!isOpen) return null;
 
@@ -28,13 +33,28 @@ export const HealthProfileModal: React.FC<HealthProfileModalProps> = ({
   const tdee = Math.round(calculateTDEE(profile));
   const targetCal = tdee;
 
+  const toggleHealthCondition = (id: HealthProfileType) => {
+    const current = profile.selectedHealthConditions || [];
+    const exists = current.includes(id);
+    const updatedList = exists 
+      ? current.filter(c => c !== id)
+      : [...current, id];
+    setProfile({
+      ...profile,
+      selectedHealthConditions: updatedList,
+      condition: updatedList[0] || undefined
+    });
+  };
+
   const handleSave = () => {
+    const conditions = profile.selectedHealthConditions || [];
     const updated: UserHealthProfile = {
       ...profile,
       bmr,
       tdee,
       targetDailyCalories: targetCal,
-      selectedHealthConditions: profile.condition ? [profile.condition] : profile.selectedHealthConditions
+      selectedHealthConditions: conditions,
+      condition: conditions[0] || undefined
     };
     onSaveProfile(updated);
     onClose();
@@ -244,30 +264,53 @@ export const HealthProfileModal: React.FC<HealthProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Health Profile / Special Condition */}
+          {/* Section 3: Health Profile / Special Condition (MULTI-SELECT) */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                2. Tình Trạng Sức Khỏe Hoặc Đối Tượng Đặc Thù:
+                2. Tình Trạng Sức Khỏe Hoặc Đối Tượng Đặc Thù (Chọn nhiều mục cùng lúc):
               </label>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                  Đã chọn {profile.selectedHealthConditions?.length || 0} tình trạng
+                </span>
+                {(profile.selectedHealthConditions?.length || 0) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, selectedHealthConditions: [], condition: undefined })}
+                    className="text-[11px] text-slate-400 hover:text-rose-600 font-semibold transition-colors"
+                  >
+                    Bỏ chọn hết
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {conditionsList.map((item) => {
-                const isSelected = profile.condition === item.id;
+                const isSelected = (profile.selectedHealthConditions || []).includes(item.id);
                 return (
                   <div
                     key={item.id}
-                    onClick={() => setProfile({ ...profile, condition: item.id })}
-                    className={`p-3 rounded-2xl border cursor-pointer select-none transition-all ${
+                    onClick={() => toggleHealthCondition(item.id)}
+                    className={`p-3 rounded-2xl border cursor-pointer select-none transition-all relative ${
                       isSelected
-                        ? "bg-emerald-50 border-emerald-500 text-emerald-950 shadow-xs"
+                        ? "bg-emerald-50 border-emerald-500 text-emerald-950 shadow-xs ring-1 ring-emerald-500/20"
                         : "bg-white border-slate-200 hover:border-emerald-200 text-slate-700"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="font-bold text-xs">{item.label}</span>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="font-bold text-xs">{item.label}</span>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                        isSelected 
+                          ? "bg-emerald-600 border-emerald-600 text-white" 
+                          : "border-slate-300 bg-slate-50"
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
                       {item.desc}

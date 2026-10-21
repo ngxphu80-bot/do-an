@@ -114,6 +114,7 @@ export interface DayMealPlan {
   totalFat: number;
   totalFiber: number;
   notes?: string;
+  rationales?: string[];
 }
 
 export interface FilterState {
@@ -128,3 +129,55 @@ export interface FilterState {
   maxCalories: number;
   maxPrepTime: number;
 }
+
+export type ShoppingItemCategory = "meat" | "seafood" | "veggie" | "grain" | "dairy" | "spice" | "fruit" | "other";
+
+export interface ShoppingListItem {
+  id: string;
+  name: string;
+  amount: string;
+  category: ShoppingItemCategory;
+  categoryLabel?: string;
+  sourceType: "pantry_missing" | "day_plan" | "custom" | "dish";
+  sourceName?: string;
+  checked: boolean;
+  notes?: string;
+  addedAt?: string;
+}
+
+export type DiaryMood = "great" | "light" | "energetic" | "full" | "tired";
+
+export interface MealDiarySlot {
+  dish: Dish;
+  eaten: boolean;
+  timeLogged?: string;
+  actualPortion?: "half" | "full" | "extra";
+  notes?: string;
+}
+
+export interface MealDiaryDay {
+  id: string;
+  date: string; // ISO format: YYYY-MM-DD
+  displayDate: string; // "Thứ Hai, 28/09/2026"
+  title: string;
+  sourcePlanId?: string;
+  breakfast?: MealDiarySlot;
+  lunch?: MealDiarySlot;
+  afternoonSnack?: MealDiarySlot;
+  dinner?: MealDiarySlot;
+  dessert?: MealDiarySlot;
+  waterGlasses: number; // 0 - 12
+  mood?: DiaryMood;
+  notes?: string;
+  targetCalories: number;
+  totalPlannedCalories: number;
+  totalEatenCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  totalFiber: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
