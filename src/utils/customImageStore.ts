@@ -104,12 +104,6 @@ export function removeCustomDishImage(dishId: string): void {
   }
 }
 
-/**
- * Returns the effective realistic photo URL for a dish:
- * 1. User custom attached image URL
- * 2. Original valid imageUrl from catalog
- * 3. Curated realistic food photography by dish name
- */
 export function getEffectiveDishImageUrl(dish: { id: string; name?: string; imageUrl: string }): string {
   // 1. User custom attached image
   const custom = getCustomDishImage(dish.id);
@@ -117,20 +111,13 @@ export function getEffectiveDishImageUrl(dish: { id: string; name?: string; imag
     return custom;
   }
 
-  // 2. Existing valid imageUrl
-  if (dish.imageUrl && dish.imageUrl.startsWith("http")) {
+  // 2. Exact dish imageUrl (dedicated image)
+  if (dish.imageUrl && dish.imageUrl.trim().length > 0) {
     return dish.imageUrl;
   }
 
-  // 3. Fallback to curated realistic food photo
-  if (dish.name) {
-    const lowerName = dish.name.toLowerCase();
-    for (const item of REAL_FOOD_PHOTO_MAP) {
-      if (item.keywords.some(k => lowerName.includes(k))) {
-        return item.url;
-      }
-    }
-  }
-
-  return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
+  // 3. Return empty string if no dedicated verified image exists.
+  // DishIllustration will render a clean neutral frame with the dish name,
+  // NEVER showing an incorrect image of another dish.
+  return "";
 }

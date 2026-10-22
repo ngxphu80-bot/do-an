@@ -6,6 +6,7 @@ import {
 import { WORLD_500_DISHES } from "./data/worldDishesCatalog";
 import { Sidebar, ActiveTabType } from "./components/Sidebar";
 import { TimeOfDayMealRecommender } from "./components/TimeOfDayMealRecommender";
+import { WeatherDemandMealRecommender } from "./components/WeatherDemandMealRecommender";
 import { DishCard } from "./components/DishCard";
 import { DishDetailModal } from "./components/DishDetailModal";
 import { MealFilterBar } from "./components/MealFilterBar";
@@ -158,9 +159,9 @@ export function App() {
   // Persistence: Custom logo (exact user image file, unedited)
   const [customLogo, setCustomLogo] = useState<string>(() => {
     try {
-      return localStorage.getItem("hon_nay_an_gi_custom_app_logo") || "";
+      return localStorage.getItem("hon_nay_an_gi_custom_app_logo") || "/assets/aistudio/image_850e160e.png";
     } catch {
-      return "";
+      return "/assets/aistudio/image_850e160e.png";
     }
   });
 
@@ -511,14 +512,20 @@ export function App() {
 
               <div className="relative z-10 flex flex-col gap-2 shrink-0">
                 <button
+                  onClick={() => setActiveTab("weather")}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs sm:text-sm shadow-lg hover:from-amber-600 hover:to-orange-600 transition-transform active:scale-95 flex items-center gap-2"
+                >
+                  <span>🌤️ Gợi Ý Món Theo Thời Tiết & Nhu Cầu</span>
+                </button>
+                <button
                   onClick={() => setActiveTab("wheel")}
-                  className="px-5 py-3 rounded-2xl bg-slate-950 text-white font-bold text-xs sm:text-sm shadow-lg hover:bg-black transition-transform active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-slate-950 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-black transition-transform active:scale-95 flex items-center gap-2"
                 >
                   <span>🎡 Vòng Quay &quot;Hôm Nay Ăn Gì&quot;</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("pantry")}
-                  className="px-5 py-3 rounded-2xl bg-white text-amber-800 font-bold text-xs sm:text-sm shadow-md hover:bg-amber-50 transition-transform active:scale-95 flex items-center gap-2"
+                  className="px-5 py-2.5 rounded-2xl bg-white text-amber-800 font-bold text-xs sm:text-sm shadow-xs hover:bg-amber-50 transition-transform active:scale-95 flex items-center gap-2 border border-amber-200"
                 >
                   <span>🧊 Nấu Theo Tủ Lạnh Sẵn Có</span>
                 </button>
@@ -571,7 +578,7 @@ export function App() {
                       onSelectDetail={(d) => setSelectedDishForDetail(d)}
                       portionMultiplier={portionMultiplier}
                       selectedPortion={filter.selectedPortion}
-                      displayMode={visualMode}
+                      displayMode="icon"
                     />
                   ))}
                 </div>
@@ -593,6 +600,16 @@ export function App() {
             )}
 
           </div>
+        )}
+
+        {/* Tab: AI Weather & Demand Meal Recommender */}
+        {activeTab === "weather" && (
+          <WeatherDemandMealRecommender
+            allDishes={WORLD_500_DISHES}
+            onSelectDish={(d) => setSelectedDishForDetail(d)}
+            onSaveDish={handleToggleSave}
+            savedDishIds={savedDishes.map(d => d.id)}
+          />
         )}
 
         {/* Tab 2: Daily Meal Planner */}
@@ -692,9 +709,9 @@ export function App() {
         <div className="max-w-7xl mx-auto px-4 space-y-2">
           <div className="flex items-center justify-center gap-2 font-bold text-slate-700">
             <img 
-              src={customLogo || "/app-logo.jpg"} 
+              src={customLogo || "/assets/aistudio/image_850e160e.png"} 
               alt="Logo" 
-              className="h-5 w-auto max-h-5 object-contain inline-block select-none" 
+              className="h-6 w-auto max-h-6 object-contain inline-block select-none" 
               referrerPolicy="no-referrer"
             />
             <span>Hôm Nay Ăn Gì?</span>

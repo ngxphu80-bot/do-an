@@ -152,16 +152,7 @@ export const TimeOfDayMealRecommender: React.FC<TimeOfDayMealRecommenderProps> =
             >
               <div>
                 <div className="w-full aspect-square rounded-xl overflow-hidden mb-2 relative border border-slate-100">
-                  {displayMode === "photo" && (customImg || dish.imageUrl) ? (
-                    <img
-                      src={customImg || dish.imageUrl}
-                      alt={dish.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <DishIllustration dish={dish} className="w-full h-full" />
-                  )}
+                  <DishIllustration dish={dish} size="sm" className="w-full h-full" />
                   <span className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
                     {dish.calories} kcal
                   </span>

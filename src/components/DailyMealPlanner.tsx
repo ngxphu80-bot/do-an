@@ -3,13 +3,14 @@ import { Dish, DayMealPlan, UserHealthProfile, VisualDisplayMode, MealType } fro
 import { 
   Calendar, RotateCcw, Shuffle, Sparkles, Flame, DollarSign, 
   CheckCircle, Plus, Bookmark, Apple, ArrowRight, ShieldCheck, 
-  Heart, Search, X, Check, Scale, Activity, Info, ShoppingCart, BookOpen, Clock 
+  Heart, Search, X, Check, Scale, Activity, Info, ShoppingCart, BookOpen, Clock, Printer 
 } from "lucide-react";
 import { formatVND, evaluateMealBalance, calculateBMR, calculateTDEE } from "../utils/nutritionCalculator";
 import { generateSmartHarmoniousPlan, MEAL_PLAN_THEMES, MealPlanTheme } from "../utils/mealPlanGenerator";
 import { getCurrentTimeOfDayInfo, TimeOfDayInfo } from "../utils/timeOfDayHelper";
 import { DishCard } from "./DishCard";
 import { DishIllustration } from "./DishIllustration";
+import { PrintMealPlanModal } from "./PrintMealPlanModal";
 
 interface DailyMealPlannerProps {
   allDishes: Dish[];
@@ -44,6 +45,7 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
 }) => {
   const [slotPickerModal, setSlotPickerModal] = useState<SlotKey | null>(null);
   const [pickerSearchQuery, setPickerSearchQuery] = useState<string>("");
+  const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
 
   // Live time of day tracking for meal recommendations
   const [currentTimeInfo, setCurrentTimeInfo] = useState<TimeOfDayInfo>(() => getCurrentTimeOfDayInfo());
@@ -349,6 +351,15 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
                 <span>Gom Vào Đi Chợ</span>
               </button>
             )}
+
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="px-4 py-2.5 rounded-2xl bg-white hover:bg-amber-50 text-slate-800 text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md transition-all active:scale-95 border border-slate-200 cursor-pointer"
+              title="In thực đơn hoặc lưu thành file PDF để đi chợ và nấu ăn"
+            >
+              <Printer className="w-4 h-4 text-amber-600" />
+              <span>In / Xuất PDF</span>
+            </button>
 
             <button
               onClick={() => onSaveDayPlan(currentPlan)}
@@ -773,6 +784,17 @@ export const DailyMealPlanner: React.FC<DailyMealPlannerProps> = ({
         </div>
       )}
 
+      {/* Print & PDF Export Modal */}
+      {showPrintModal && (
+        <PrintMealPlanModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          plan={currentPlan}
+          userProfile={userProfile}
+        />
+      )}
+
     </div>
   );
 };
+

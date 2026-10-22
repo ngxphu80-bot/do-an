@@ -39,12 +39,8 @@ export const DishIllustration: React.FC<DishIllustrationProps> = ({
   }, [dish.id, dish.imageUrl]);
 
   const handleImgError = () => {
-    if (!fallbackTried) {
-      setFallbackTried(true);
-      setCurrentSrc("https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80");
-    } else {
-      setImgError(true);
-    }
+    // Tuyệt đối không dùng hình món khác làm fallback khi ảnh lỗi!
+    setImgError(true);
   };
 
   // Render matching Lucide Icon
@@ -75,8 +71,8 @@ export const DishIllustration: React.FC<DishIllustrationProps> = ({
     hero: "text-7xl sm:text-8xl"
   }[size];
 
-  // If in Photo mode and image hasn't errored out
-  if (displayMode === "photo" && !imgError) {
+  // If in Photo mode and valid dedicated image exists & hasn't errored out
+  if (displayMode === "photo" && currentSrc && currentSrc.trim().length > 0 && !imgError) {
     return (
       <div className={`relative w-full h-full overflow-hidden bg-slate-100 ${roundedClassName} ${className}`}>
         <img
@@ -108,6 +104,71 @@ export const DishIllustration: React.FC<DishIllustrationProps> = ({
             >
               <Palette className="w-3 h-3" />
               <span className="hidden sm:inline">Icon</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Khung hình trung tính có tên món (Neutral Dish Frame)
+  // Tuyệt đối KHÔNG dùng hình của món khác theo quy định
+  if (displayMode === "photo" && (!currentSrc || currentSrc.trim().length === 0 || imgError)) {
+    return (
+      <div 
+        className={`relative w-full h-full overflow-hidden select-none p-3.5 sm:p-4 flex flex-col justify-between border border-stone-800/80 shadow-inner group ${roundedClassName} ${className}`}
+        style={{
+          background: "linear-gradient(145deg, #1f1f23 0%, #18181b 50%, #09090b 100%)"
+        }}
+      >
+        {/* Subtle background food illustration watermark */}
+        <div className="absolute -right-3 -bottom-3 text-7xl opacity-5 pointer-events-none select-none">
+          {iconData.emoji}
+        </div>
+
+        {/* Top: Flag + Country + Calories */}
+        <div className="relative z-10 flex items-center justify-between">
+          <span className="px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-bold text-amber-300 border border-white/10 flex items-center gap-1">
+            <span>{dish.flagEmoji || "🇻🇳"}</span>
+            <span>{dish.country}</span>
+          </span>
+
+          <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800/40">
+            🔥 {dish.calories} kcal
+          </span>
+        </div>
+
+        {/* Center: Dish Name in prominent typography */}
+        <div className="relative z-10 my-auto text-center px-1 py-1">
+          <span className="text-2xl sm:text-3xl block mb-1.5 filter drop-shadow">
+            {iconData.emoji}
+          </span>
+          <h3 className="text-white font-black text-sm sm:text-base leading-snug line-clamp-2 text-balance drop-shadow-sm group-hover:text-amber-300 transition-colors">
+            {dish.name}
+          </h3>
+          {dish.nativeName && (
+            <p className="text-[10px] text-stone-400 font-medium line-clamp-1 mt-0.5">
+              {dish.nativeName}
+            </p>
+          )}
+        </div>
+
+        {/* Bottom: Honest status badge - Tuyệt đối không dùng hình món khác */}
+        <div className="relative z-10 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px] text-stone-400">
+          <span className="truncate max-w-[85%] text-stone-300 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+            <span>Hình đặc trưng đang cập nhật</span>
+          </span>
+          {showModeToggle && onToggleMode && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleMode();
+              }}
+              className="p-1 rounded-md bg-white/10 text-white hover:bg-white/20 transition-colors"
+              title="Chuyển sang chế độ minh họa Icon"
+            >
+              <Palette className="w-3 h-3 text-amber-300" />
             </button>
           )}
         </div>

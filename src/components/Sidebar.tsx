@@ -3,12 +3,12 @@ import React, { useRef, useState, useEffect } from "react";
 import { 
   Utensils, CalendarDays, Refrigerator, Disc3, HeartPulse, 
   Bookmark, Sparkles, ShoppingCart, BookOpen, Upload, Menu, X, 
-  Clock, Camera, Palette, ChevronRight
+  Clock, Camera, Palette, ChevronRight, CloudSun 
 } from "lucide-react";
 import { VisualDisplayMode, UserHealthProfile } from "../types";
 import { getCurrentTimeOfDayInfo, TimeOfDayInfo } from "../utils/timeOfDayHelper";
 
-export type ActiveTabType = "explore" | "daily_plan" | "pantry" | "wheel" | "health" | "saved" | "shopping" | "diary";
+export type ActiveTabType = "explore" | "weather" | "daily_plan" | "pantry" | "wheel" | "health" | "saved" | "shopping" | "diary";
 
 interface SidebarProps {
   activeTab: ActiveTabType;
@@ -68,6 +68,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Utensils className="w-5 h-5" />, 
       badge: `${totalDishesCount}+`,
       subtext: "Kho tàng 500+ món ngon thế giới" 
+    },
+    { 
+      id: "weather", 
+      label: "Thời Tiết & Nhu Cầu", 
+      icon: <CloudSun className="w-5 h-5" />, 
+      badge: "AI Live",
+      subtext: "Gợi ý chuẩn nhiệt độ & tình huống" 
     },
     { 
       id: "daily_plan", 
@@ -136,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div className="relative group/logo shrink-0 flex items-center justify-center">
             <img
-              src={customLogo || "/app-logo.jpg"}
+              src={customLogo || "/assets/aistudio/image_850e160e.png"}
               alt="Logo Hôm Nay Ăn Gì"
               className="h-11 w-auto max-h-12 max-w-[56px] object-contain select-none"
               referrerPolicy="no-referrer"
@@ -261,38 +268,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Preferences & Quick Actions */}
       <div className="pt-4 border-t border-slate-200/80 space-y-2.5">
-        {/* Visual Display Mode Toggle */}
-        {onToggleVisualMode && (
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center justify-between text-xs">
-            <span className="text-[11px] font-bold text-slate-600 pl-2">Hiển thị:</span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onToggleVisualMode("photo")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
-                  visualMode === "photo" 
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Camera className="w-3 h-3 text-amber-600" />
-                <span>Ảnh</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onToggleVisualMode("icon")}
-                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
-                  visualMode === "icon" 
-                    ? "bg-white text-slate-900 shadow-2xs font-extrabold" 
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Palette className="w-3 h-3 text-amber-600" />
-                <span>Vẽ</span>
-              </button>
-            </div>
+        {/* Visual Display Mode Indicator */}
+        <div className="bg-amber-50/90 p-2 rounded-xl border border-amber-200/80 flex items-center gap-2 text-xs">
+          <Palette className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="leading-tight">
+            <span className="text-[11px] font-bold text-amber-950 block">Chế Độ Biểu Tượng Icon</span>
+            <span className="text-[10px] text-amber-700/90">Trực quan, dễ nhìn & chuẩn vị</span>
           </div>
-        )}
+        </div>
 
         {/* Health Profile Status Chip */}
         <div 
@@ -341,7 +324,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="flex items-center gap-2 cursor-pointer"
           >
             <img
-              src={customLogo || "/app-logo.jpg"}
+              src={customLogo || "/assets/aistudio/image_850e160e.png"}
               alt="Logo Hôm Nay Ăn Gì"
               className="h-8 w-auto max-h-8 max-w-[40px] object-contain"
               referrerPolicy="no-referrer"
@@ -384,13 +367,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Mobile Bottom Quick Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-amber-100 flex items-center justify-around py-1.5 px-2 shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-amber-100 px-3 py-1 flex items-center justify-around shadow-lg">
         {[
           { id: "explore" as const, label: "Khám Phá", icon: <Utensils className="w-4 h-4" /> },
+          { id: "weather" as const, label: "Thời Tiết", icon: <CloudSun className="w-4 h-4" /> },
           { id: "daily_plan" as const, label: "Thực Đơn", icon: <CalendarDays className="w-4 h-4" /> },
           { id: "diary" as const, label: "Nhật Ký", icon: <BookOpen className="w-4 h-4" />, badge: diaryCount },
           { id: "pantry" as const, label: "Tủ Lạnh", icon: <Refrigerator className="w-4 h-4" /> },
-          { id: "shopping" as const, label: "Đi Chợ", icon: <ShoppingCart className="w-4 h-4" />, badge: shoppingCount },
         ].map((item) => {
           const isActive = activeTab === item.id;
           return (

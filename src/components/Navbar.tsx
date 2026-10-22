@@ -59,7 +59,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <div className="relative group/logo shrink-0 flex items-center justify-center">
               <img
-                src={customLogo || "/app-logo.jpg"}
+                src={customLogo || "/assets/aistudio/image_850e160e.png"}
                 alt="Logo Hôm Nay Ăn Gì"
                 className="h-10 sm:h-12 w-auto max-h-12 max-w-[56px] object-contain"
                 referrerPolicy="no-referrer"

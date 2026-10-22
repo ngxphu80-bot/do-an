@@ -128,42 +128,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         <div className="overflow-y-auto grow p-0">
           
           {/* Hero Media Section with Food Icon illustration */}
-          <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-slate-950">
+          <div className="relative h-64 sm:h-80 w-full overflow-hidden bg-amber-50/40">
             <DishIllustration
               dish={dish}
-              displayMode={localMode}
               size="hero"
-              showModeToggle={false}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
-            
-            {/* Quick Toggle Mode Switcher (Icon vs Photo) */}
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md p-1 rounded-2xl border border-white/20">
-              <button
-                type="button"
-                onClick={() => setLocalMode("icon")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  localMode === "icon"
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                <Palette className="w-3.5 h-3.5" />
-                <span>Biểu Tượng Icon</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLocalMode("photo")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  localMode === "photo"
-                    ? "bg-amber-500 text-white shadow-xs"
-                    : "text-slate-300 hover:text-white"
-                }`}
-              >
-                <Camera className="w-3.5 h-3.5" />
-                <span>Ảnh Chụp</span>
-              </button>
-            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none" />
 
             {/* Overlay Info */}
             <div className="absolute bottom-6 left-6 right-6 text-white pointer-events-none">

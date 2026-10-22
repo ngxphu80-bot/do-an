@@ -666,16 +666,7 @@ export const FoodDiary: React.FC<FoodDiaryProps> = ({
                             onClick={() => onSelectDetail(dish)}
                             className="w-14 h-14 rounded-xl overflow-hidden shrink-0 cursor-pointer border border-slate-200 group relative"
                           >
-                            {displayMode === "photo" && (customImg || dish.imageUrl) ? (
-                              <img
-                                src={customImg || dish.imageUrl}
-                                alt={dish.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <DishIllustration dish={dish} className="w-full h-full" />
-                            )}
+                            <DishIllustration dish={dish} size="sm" className="w-full h-full" />
                           </div>
 
                           {/* Dish Details */}
@@ -1010,17 +1001,8 @@ export const FoodDiary: React.FC<FoodDiaryProps> = ({
                     className="p-3 rounded-xl border border-slate-100 hover:border-amber-300 hover:bg-amber-50/50 flex items-center justify-between gap-3 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200">
-                        {customImg || dish.imageUrl ? (
-                          <img
-                            src={customImg || dish.imageUrl}
-                            alt={dish.name}
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <DishIllustration dish={dish} className="w-full h-full" />
-                        )}
+                      <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-slate-200">
+                        <DishIllustration dish={dish} size="sm" className="w-full h-full" />
                       </div>
                       <div>
                         <span className="font-bold text-slate-800 text-sm block">
