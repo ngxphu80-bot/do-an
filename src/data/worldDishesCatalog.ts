@@ -2,6 +2,114 @@ import { Dish } from "../types";
 
 export const WORLD_DISHES_CATALOG: Dish[] = [
   {
+    "id": "dish_ca_phe_bot_bien",
+    "name": "Cà Phê Bọt Biển (Dalgona Coffee)",
+    "nativeName": "Dalgona Whipped Coffee",
+    "mealTypes": [
+      "breakfast",
+      "afternoon",
+      "dessert",
+      "snack"
+    ],
+    "region": "asian",
+    "country": "Việt Nam",
+    "flagEmoji": "🇻🇳",
+    "imageUrl": "/src/assets/images/ca_phe_bot_bien_1792989597861.jpg",
+    "description": "Thức uống trứ danh với lớp bọt cà phê đánh bông mịn màu nâu caramel bồng bềnh, thơm nức mũi phủ trên nền sữa tươi thanh mát và đá lạnh sảng khoái.",
+    "calories": 195,
+    "protein": 6,
+    "carbs": 26,
+    "fat": 7,
+    "fiber": 1,
+    "estimatedCostVND": 25000,
+    "prepTimeMinutes": 10,
+    "cookTimeMinutes": 0,
+    "tastes": [
+      "sweet",
+      "creamy",
+      "mild"
+    ],
+    "dietarySuitability": [
+      "weight_loss",
+      "gym"
+    ],
+    "allergens": [
+      "dairy"
+    ],
+    "keyIngredients": [
+      "Cà phê đen hòa tan",
+      "Đường cát",
+      "Nước sôi",
+      "Sữa tươi không đường",
+      "Đá viên"
+    ],
+    "ingredients": [
+      {
+        "name": "Cà phê đen hòa tan nguyên chất",
+        "amount": "2 thìa canh (15g)",
+        "notes": "Dùng cà phê đen nguyên chất không đường sữa để tạo bọt chuẩn",
+        "category": "spice"
+      },
+      {
+        "name": "Đường cát trắng",
+        "amount": "2 thìa canh (20g)",
+        "notes": "Tỉ lệ 1:1 với cà phê giúp tạo bọt bông xốp đứng form",
+        "category": "spice"
+      },
+      {
+        "name": "Nước sôi nóng (90-100°C)",
+        "amount": "2 thìa canh (30ml)",
+        "notes": "Nước thật sôi giúp hòa tan đường và đánh bông bọt nhanh",
+        "category": "spice"
+      },
+      {
+        "name": "Sữa tươi thanh trùng không đường",
+        "amount": "150ml - 180ml",
+        "notes": "Có thể thay bằng sữa yến mạch, sữa hạnh nhân nếu kiêng lactose",
+        "category": "dairy"
+      },
+      {
+        "name": "Đá viên sạch",
+        "amount": "1/2 ly",
+        "notes": "Làm lạnh sữa và làm nền đỡ lớp bọt nổi đẹp mắt",
+        "category": "grain"
+      },
+      {
+        "name": "Bột cacao hoặc vụn bánh quy",
+        "amount": "1 ít (tùy chọn)",
+        "notes": "Rắc nhẹ lên mặt bọt để trang trí",
+        "category": "spice"
+      }
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "title": "Chuẩn bị hỗn hợp cà phê theo tỉ lệ vàng 1:1:1",
+        "instruction": "Cho vào 1 tô sạch hoặc âu thủy tinh: 2 thìa canh cà phê hòa tan đen, 2 thìa canh đường cát trắng và 2 thìa canh nước sôi nóng. Khuấy nhẹ cho tan hết đường và hạt cà phê.",
+        "timeMinutes": 2,
+        "method": "Sơ chế"
+      },
+      {
+        "step": 2,
+        "title": "Đánh bông bọt cà phê (Whipped Dalgona Foam)",
+        "instruction": "Dùng phới lồng cầm tay hoặc máy đánh trứng đánh đều tay theo một chiều. Sau khoảng 3-5 phút (với máy) hoặc 8-10 phút (với phới tay), hỗn hợp sẽ chuyển từ màu đen sang màu nâu vàng caramen sáng, sánh đặc mịn mượt và tạo chóp bông xốp đứng form kiên cố.",
+        "timeMinutes": 6,
+        "temperatureOrFlame": "Nhiệt độ phòng",
+        "method": "Trộn / Cuốn"
+      },
+      {
+        "step": 3,
+        "title": "Rót sữa và thưởng thức",
+        "instruction": "Cho đá viên vào 2/3 ly thủy tinh, rót 150ml sữa tươi vào. Nhẹ nhàng dùng muỗng múc lớp bọt cà phê bông xốp phủ lên trên mặt sữa. Rắc thêm chút bột cacao nếu thích. Khi uống, có thể nhâm nhi từng lớp hoặc khuấy đều để cảm nhận sự hòa quyện béo ngậy ngọt ngào.",
+        "timeMinutes": 2,
+        "method": "Trộn / Cuốn"
+      }
+    ],
+    "chefTips": "Bí quyết barista: Bắt buộc dùng nước thật sôi và tỉ lệ cà phê - đường - nước phải chuẩn xác 1:1:1. Không dùng cà phê 3-in-1 vì có sẵn bột kem sẽ không thể đánh bông đứng chóp.",
+    "nutritionBalanceTip": "Cung cấp lượng caffeine tự nhiên giúp tăng cường sự tỉnh táo, hưng phấn và tập trung cho ngày dài. Nếu ăn kiêng Eat Clean / Low-carb, bạn có thể thay bằng đường ăn kiêng và sữa hạt.",
+    "isPopular": true
+  },
+  {
     "id": "dish_0001",
     "name": "Phở Bò Tái Nạm Bắp Hoa",
     "nativeName": "Rare Beef & Brisket Pho",

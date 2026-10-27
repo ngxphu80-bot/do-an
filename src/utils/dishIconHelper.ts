@@ -460,6 +460,35 @@ export function getDishIconData(dish: Dish): DishIconData {
     };
   }
 
+  // 16. Cà phê, Trà, Thức uống bọt biển (Coffee & Dalgona Beverages)
+  if (
+    name.includes("cà phê") ||
+    name.includes("coffee") ||
+    name.includes("dalgona") ||
+    name.includes("bọt biển") ||
+    name.includes("latte") ||
+    name.includes("cappuccino") ||
+    name.includes("matcha") ||
+    name.includes("trà")
+  ) {
+    return {
+      emoji: "☕",
+      categoryLabel: "Cà Phê & Thức Uống",
+      subType: "Hương thơm đậm đà, bọt mịn bồng bềnh",
+      lucideIconName: "Coffee",
+      steamAroma: false,
+      colorScheme: {
+        bgGradient: "from-amber-700/25 via-amber-800/15 to-stone-900/40",
+        darkBgGradient: "from-amber-950 via-stone-900 to-amber-900/60",
+        glowColor: "rgba(217, 119, 6, 0.3)",
+        badgeBg: "bg-amber-100",
+        badgeText: "text-amber-900",
+        borderAccent: "border-amber-400",
+        chipBg: "bg-amber-700/30 text-amber-200"
+      }
+    };
+  }
+
   // Default Culinary fallback
   return {
     emoji: "🍽️",
